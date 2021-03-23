@@ -7,6 +7,9 @@
 #     1. Prepare Data
 #     2. Item Response Patterns
 #
+# Code for preparing each data source is included in sub-sections with a line
+# that begins with "Source:"
+#
 #------------------------------------------------------------------------------#
 
 date()
@@ -32,6 +35,11 @@ names(champs)
 table(champs$Id10013)
 
 ## lapply(champs, unique)
+champs$Id10002[champs$Id10002 == "very"] <- "veryl"
+champs$Id10003[champs$Id10003 == "very"] <- "veryl"
+champs$Id10004[champs$Id10004 == "DRY SEASON"] <- "dry"
+champs$Id10004[champs$Id10004 == "WET SEASON"] <- "wet"
+
 
 champs_merge <- NULL
 for (i in names(who2016_151_data)) {
@@ -51,13 +59,10 @@ champs_merge$source <- "CHAMPS"
 table(champs_merge$consented.deceased_CRVS.info_on_deceased.ageInDays == champs$ageInDays)
 table(is.na(champs_merge$consented.deceased_CRVS.info_on_deceased.ageInDays), is.na(champs$ageInDays))
 champs_merge$meta.instanceID <- champs$champs_deid
-
-#champs_merge$reference_cause <- champs_ref_cod$Underlying_Cause
-#champs_merge$reference_cause <- champs_ref_cod$Immediate_COD
 dim(champs)
 dim(champs_ref_cod)
-merge_cod <- champs_ref_cod[, c('champs_deid', 'Immediate_COD', 'Underlying_Cause')]
-names(merge_cod) <- c('meta.instanceID', 'ref_cod', 'ref_cod_u')
+merge_cod <- champs_ref_cod[, c('champs_deid', 'Underlying_Cause', 'Immediate_COD')]
+names(merge_cod) <- c('meta.instanceID', 'ref_cod', 'ref_immediate_cod')
 table(champs_merge$meta.instanceID %in% merge_cod$meta.instanceID)
 champs_merge <- merge(champs_merge, merge_cod, by = 'meta.instanceID')
 ## write.csv(champs_merge, "../data/clean data/champs_clean.csv", row.names = FALSE)
@@ -77,6 +82,12 @@ comsa$Id10431 <- iconv(comsa$Id10431, "UTF-8", "ASCII", sub = "")
 
 ## lapply(comsa, unique)
 
+## (Id10114) If the baby didn't show any sign of life, was it born dead?
+table(comsa$Id10114)
+comsa$Id10114[comsa$Id10114 == "dead"] <- "yes"
+comsa$Id10114[comsa$Id10114 == "alive"] <- "no"
+table(comsa$Id10114)
+
 comsa_merge <- NULL
 for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
     x <- strsplit(i, "\\.")[[1]]
@@ -88,11 +99,12 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         comsa_merge[[i]] <- comsa[, index]
         }
 }
+## add source and reference causes (if applicable)
 comsa_merge <- as.data.frame(comsa_merge)
 identical(names(comsa_merge), names(who2016_151_data))
 comsa_merge$source <- "COMSA"
 comsa_merge$ref_cod <- NA
-comsa_merge$ref_cod_u <- NA
+comsa_merge$ref_immediate_cod <- NA
 ## write.csv(comsa_merge, "../data/clean data/comsa_clean.csv", row.names = FALSE)
 ## comsa_results <- itemMissing(comsa_merge, odk_form = who2016)
 
@@ -106,9 +118,10 @@ comsa_merge$ref_cod_u <- NA
 ## names(egypt)
 ## identical(names(egypt), names(who2016_151_data))
 ## egypt_merge <- egypt
+## add source and reference causes (if applicable)
 ## egypt_merge$source <- "Egypt"
 ## egypt_merge$ref_cod <- NA
-## egypt_merge$ref_cod_u <- NA
+## egypt_merge$ref_immediate_cod <- NA
 ## egypt_results <- itemMissing(egypt, odk_form = who2016)
 ## write.csv(egypt_merge, "../data/clean data/egypt_clean.csv", row.names = FALSE)
 ## egypt_results <- itemMissing(egypt_merge, odk_form = who2016)
@@ -135,11 +148,12 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         ic_merge[[i]] <- ivory_coast[, index]
         }
 }
+## add source and reference causes (if applicable)
 ic_merge <- as.data.frame(ic_merge)
 identical(names(ic_merge), names(who2016_151_data))
 ic_merge$source <- "Ivory Coast"
 ic_merge$ref_cod <- NA
-ic_merge$ref_cod_u <- NA
+ic_merge$ref_immediate_cod <- NA
 ## write.csv(ic_merge, "../data/clean data/ivory_coast_clean.csv", row.names = FALSE)
 ## ic_results <- itemMissing(ic_merge, odk_form = who2016)
 
@@ -210,21 +224,22 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
 bongo3_merge <- as.data.frame(bongo3_merge)
 identical(names(bongo3_merge), names(who2016_151_data))
 
+## add source and reference causes (if applicable)
 bongo1_merge$source <- "Bongo (Ghana)"
 bongo1_merge$ref_cod <- NA
-bongo1_merge$ref_cod_u <- NA
+bongo1_merge$ref_immediate_cod <- NA
 ## write.csv(bongo1_merge, "../data/clean data/bongo1_clean.csv", row.names = FALSE)
 ## bongo1_results <- itemMissing(bongo1_merge, odk_form = who2016)
 
 bongo2_merge$source <- "Bongo (Ghana)"
 bongo2_merge$ref_cod <- NA
-bongo2_merge$ref_cod_u <- NA
+bongo2_merge$ref_immediate_cod <- NA
 ## write.csv(bongo2_merge, "../data/clean data/bongo2_clean.csv", row.names = FALSE)
 ## bongo2_results <- itemMissing(bongo2_merge, odk_form = who2016)
 
 bongo3_merge$source <- "Bongo (Ghana)"
 bongo3_merge$ref_cod <- NA
-bongo3_merge$ref_cod_u <- NA
+bongo3_merge$ref_immediate_cod <- NA
 ## write.csv(bongo3_merge, "../data/clean data/bongo3_clean.csv", row.names = FALSE)
 ## bongo3_results <- itemMissing(bongo3_merge, odk_form = who2016)
 
@@ -258,8 +273,6 @@ merged_choices <- merge(codebook, choices, by.x = c("list_name", "label"),
                         by.y = c("list.name", "label"), all.x = TRUE)
 dim(merged_choices)
 
-## lapply(kintampo, unique)
-
 for (i in 1:ncol(kintampo)) { # i = 1
     
     idx <- which(who2016$name == names(kintampo)[i])
@@ -286,6 +299,8 @@ table(unlist(all_na))
 names(all_na)[unlist(all_na)]
 kintampo_who[, names(all_na)[unlist(all_na)]] <- ""
 
+## lapply(kintampo_who, unique)
+
 kintampo_merge <- NULL
 for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
     x <- strsplit(i, "\\.")[[1]]
@@ -297,11 +312,12 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         kintampo_merge[[i]] <- kintampo_who[, index]
         }
 }
+## add source and reference causes (if applicable)
 kintampo_merge <- as.data.frame(kintampo_merge)
 identical(names(kintampo_merge), names(who2016_151_data))
 kintampo_merge$source <- "KINTAMPO"
 kintampo_merge$ref_cod <- NA
-kintampo_merge$ref_cod_u <- NA
+kintampo_merge$ref_immediate_cod <- NA
 ## write.csv(kintampo_merge, "../data/clean data/kintampo_clean.csv", row.names = FALSE)
 ## kintampo_results <- itemMissing(kintampo_merge, odk_form = who2016)
 
@@ -316,6 +332,14 @@ names(gha_maternal)
 table(gha_maternal$Id10013)
 
 ## lapply(gha_maternal, unique)
+table(gha_maternal$Id10090)
+gha_maternal$Id10090[gha_maternal$Id10090 == "yes, abuse"] <- "yes"
+gha_maternal$Id10090[gha_maternal$Id10090 == "yes, homicide"] <- "yes"
+table(gha_maternal$Id10090)
+
+table(gha_maternal$Id10310)
+gha_maternal$Id10310[gha_maternal$Id10310 == "yes, no pregnancy in 12 months before death"] <- "yes"
+table(gha_maternal$Id10310)
 
 gha_maternal_merge <- NULL
 for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
@@ -328,11 +352,12 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         gha_maternal_merge[[i]] <- gha_maternal[, index]
         }
 }
+## add source and reference causes (if applicable)
 gha_maternal_merge <- as.data.frame(gha_maternal_merge)
 identical(names(gha_maternal_merge), names(who2016_151_data))
 gha_maternal_merge$source <- "Ghana (maternal)"
 gha_maternal_merge$ref_cod <- NA
-gha_maternal_merge$ref_cod_u <- NA
+gha_maternal_merge$ref_immediate_cod <- NA
 ## write.csv(gha_maternal_merge, "../data/clean data/ghana_maternal_clean.csv", row.names = FALSE)
 ## gha_maternal_results <- itemMissing(gha_maternal_merge, odk_form = who2016)
 
@@ -359,55 +384,57 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         nanoro_merge[[i]] <- nanoro[, index]
         }
 }
+## add source and reference causes (if applicable)
 nanoro_merge <- as.data.frame(nanoro_merge)
 identical(names(nanoro_merge), names(who2016_151_data))
 nanoro_merge$source <- "Nanoro (Burkina Faso)"
 nanoro_merge$ref_cod <- NA
-nanoro_merge$ref_cod_u <- NA
+nanoro_merge$ref_immediate_cod <- NA
 ## write.csv(nanoro_merge, "../data/clean data/nanoro_clean.csv", row.names = FALSE)
 ## nanoro_results <- itemMissing(nanoro_merge, odk_form = who2016)
 
 
-#---------------------------------#
-# Source: Nouna (Burkina Faso)
-#---------------------------------#
-dir("../data/raw data/Nouna - Burkina Faso")
-nouna <- read_excel("../data/raw data/Nouna - Burkina Faso/Nouna VA_Data Jan 2021.xlsx")
-nouna <- as.data.frame(nouna)
-dim(nouna)
-names(nouna)
-table(nouna$Id10013)
+## #---------------------------------#
+## # Source: Nouna (Burkina Faso)
+## #---------------------------------#
+## dir("../data/raw data/Nouna - Burkina Faso")
+## nouna <- read_excel("../data/raw data/Nouna - Burkina Faso/Nouna VA_Data Jan 2021.xlsx")
+## nouna <- as.data.frame(nouna)
+## dim(nouna)
+## names(nouna)
+## table(nouna$Id10013)
 
-nouna[1:40,c("DOB", "DOD")]
-nouna$Id10020 <- nouna$DOB
-nouna$Id10022 <- nouna$DOD
-nouna$ageInMonthsByYear <- nouna$ageInMonths
-nouna$Id10310 <- nouna$Id10306
-nouna$Id10414 <- nouna$Id10414__0
-nouna$Id10439_check <- nouna$Id10439_check__1
-nouna$Id10440_check <- nouna$Id10440
-nouna$Id10441_check <- nouna$Id10441
+## nouna[1:40,c("DOB", "DOD")]
+## nouna$Id10020 <- nouna$DOB
+## nouna$Id10022 <- nouna$DOD
+## nouna$ageInMonthsByYear <- nouna$ageInMonths
+## nouna$Id10310 <- nouna$Id10306
+## nouna$Id10414 <- nouna$Id10414__0
+## nouna$Id10439_check <- nouna$Id10439_check__1
+## nouna$Id10440_check <- nouna$Id10440
+## nouna$Id10441_check <- nouna$Id10441
 
-## lapply(nouna, unique)
+## ## lapply(nouna, unique)
 
-nouna_merge <- NULL
-for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
-    x <- strsplit(i, "\\.")[[1]]
-    new_lab <- tolower(x[length(x)])
-    index <- grep(paste0(new_lab, "$"), tolower(names(nouna)))
-    if (length(index) == 0) {
-        nouna_merge[[i]] <- rep("", nrow(nouna))
-    } else {
-        nouna_merge[[i]] <- nouna[, index]
-        }
-}
-nouna_merge <- as.data.frame(nouna_merge)
-identical(names(nouna_merge), names(who2016_151_data))
-nouna_merge$source <- "Nouna (Burkina Faso)"
-nouna_merge$ref_cod <- NA
-nouna_merge$ref_cod_u <- NA
-## write.csv(nouna_merge, "../data/clean data/nouna_clean.csv", row.names = FALSE)
-## nouna_results <- itemMissing(nouna_merge, odk_form = who2016)
+## nouna_merge <- NULL
+## for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
+##     x <- strsplit(i, "\\.")[[1]]
+##     new_lab <- tolower(x[length(x)])
+##     index <- grep(paste0(new_lab, "$"), tolower(names(nouna)))
+##     if (length(index) == 0) {
+##         nouna_merge[[i]] <- rep("", nrow(nouna))
+##     } else {
+##         nouna_merge[[i]] <- nouna[, index]
+##         }
+## }
+## ## add source and reference causes (if applicable)
+## nouna_merge <- as.data.frame(nouna_merge)
+## identical(names(nouna_merge), names(who2016_151_data))
+## nouna_merge$source <- "Nouna (Burkina Faso)"
+## nouna_merge$ref_cod <- NA
+## nouna_merge$ref_immediate_cod <- NA
+## ## write.csv(nouna_merge, "../data/clean data/nouna_clean.csv", row.names = FALSE)
+## ## nouna_results <- itemMissing(nouna_merge, odk_form = who2016)
 
 
 #---------------------------------#
@@ -432,17 +459,19 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         kenya_c_merge[[i]] <- kenya_c[, index]
         }
 }
+## add source and reference causes (if applicable)
 kenya_c_merge <- as.data.frame(kenya_c_merge)
 identical(names(kenya_c_merge), names(who2016_151_data))
 kenya_c_merge$source <- "Kenya - Collins"
 kenya_c_merge$ref_cod <- NA
-kenya_c_merge$ref_cod_u <- NA
+kenya_c_merge$ref_immediate_cod <- NA
 ## write.csv(kenya_c_merge, "../data/clean data/kenya_c_clean.csv", row.names = FALSE)
 ## kenya_c_results <- itemMissing(kenya_c_merge, odk_form = who2016)
 
 
 #---------------------------------#
 # Source: South Africa
+# note: openned xlsx file and saved as (UTF-8) .csv file
 #---------------------------------#
 dir("../data/raw data/MRC data")
 ## rsa <- read_excel("../data/raw data/MRC data/20210316_samrc_va_with_cod.xlsx",
@@ -451,7 +480,10 @@ dir("../data/raw data/MRC data")
 rsa_cod <- read_excel("../data/raw data/MRC data/20210316_samrc_va_with_cod.xlsx",
                       sheet = "VA data with COD")
 rsa_cod <- as.data.frame(rsa_cod)
-rsa <- read.csv("../data/raw data/MRC data/south_africa_va.csv", stringsAsFactors = FALSE)
+rsa <- read.csv("../data/raw data/MRC data/SAMRC_NCODV_VA VERSION 8 SEP 26_ 2019-03-12_anon2.csv", stringsAsFactors = FALSE)
+rsa_odk_names <- str_extract(names(rsa), "\\.((Id)|(id))[^\\.]+|^ageIn[:alpha:]+|^is[:alnum:]+|VA.Unique.study.ID")
+rsa_odk_names <- gsub("^\\.", "", rsa_odk_names)
+names(rsa) <- rsa_odk_names
 rsa$meta.instanceID <- rsa$VA.Unique.study.ID
 dim(rsa)
 names(rsa)
@@ -459,29 +491,37 @@ table(rsa$Id10013)
 
 ## lapply(rsa, unique)
 
+## standardize responses
+table(rsa$Id10310)
+rsa$Id10310[rsa$Id10310 == "Yes (SHE WAS NOT PREGNANT; AND SHE DID NOT RECENTLY DELIVER, HAVE ABORTION, OR MISCARRY)"] <- "yes"
+rsa$Id10310[rsa$Id10310 == "No (SHE WAS PREGNANT OR SHE RECENTLY DELIVERED, HAD AN ABORTION OR MISCARRIED)"] <- "no"
+rsa$Id10310[rsa$Id10310 == "Doesn't know"] <- "dk"
+rsa$Id10310[rsa$Id10310 == "Refused to answer"] <- "ref"
+
+rsa[rsa == "Refused to answer"] <- "ref"
+rsa[rsa == "Doesn't know"] <- "dk"
+
 rsa_merge <- NULL
 for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
     x <- strsplit(i, "\\.")[[1]]
     new_lab <- tolower(x[length(x)])
     index <- grep(paste0(new_lab, "$"), tolower(names(rsa)))
+    if (length(index) > 1) index <- sort(index)[1]
     if (length(index) == 0) {
         rsa_merge[[i]] <- rep("", nrow(rsa))
     } else {
         rsa_merge[[i]] <- rsa[, index]
         }
 }
+## add source and reference causes (if applicable)
 rsa_merge <- as.data.frame(rsa_merge)
 identical(names(rsa_merge), names(who2016_151_data))
 rsa_merge$source <- "South Africa"
-rsa_merge$ref_cod <- NA
-
 dim(rsa_merge)
 dim(rsa_cod)
 table(rsa_merge$meta.instanceID %in% rsa_cod$id)
-
-#merge_cod <- rsa_cod[, c('id', 'phys_cod', 'UCODFinal')]
-merge_cod <- rsa_cod[, c('id', 'phys_cod')]
-names(merge_cod) <- c('meta.instanceID', 'ref_cod_u')
+merge_cod <- rsa_cod[, c('id', 'UCODFinal', 'phys_cod')]
+names(merge_cod) <- c('meta.instanceID', 'ref_cod', 'ref_immediate_cod')
 table(rsa_merge$meta.instanceID %in% merge_cod$meta.instanceID)
 rsa_merge <- merge(rsa_merge, merge_cod, by = 'meta.instanceID',
                    all.x = TRUE, all.y = FALSE)
@@ -490,11 +530,17 @@ names(rsa_merge)
 
 rsa_merge$meta.instanceID[!(rsa_merge$meta.instanceID %in% rsa_cod$id)]
 rsa_cod$id[which(!(rsa_cod$id %in% rsa_merge$meta.instanceID))]
-## I think these are the same
-rsa_merge$ref_cod_u[rsa_merge$meta.instanceID == 103077]
+## I think these are the same: 103077 1030771 &
+rsa_cod$ref_cod[rsa_cod$id == 1030771]
+rsa_merge$ref_cod[rsa_merge$meta.instanceID == 103077]
+rsa_merge$ref_immediate_cod[rsa_merge$meta.instanceID == 103077]
+
+rsa_cod$UCODFinal[rsa_cod$id == 1030771]
 rsa_cod$phys_cod[rsa_cod$id == 1030771]
-rsa_merge$ref_cod_u[rsa_merge$meta.instanceID == 103077] <- rsa_cod$phys_cod[rsa_cod$id == 1030771]
-rsa_merge$ref_cod_u[rsa_merge$meta.instanceID == 103077]
+rsa_merge$ref_cod[rsa_merge$meta.instanceID == 103077] <- rsa_cod$UCODFinal[rsa_cod$id == 1030771]
+rsa_merge$ref_immediate_cod[rsa_merge$meta.instanceID == 103077] <- rsa_cod$phys_cod[rsa_cod$id == 1030771]
+rsa_merge$ref_cod[rsa_merge$meta.instanceID == 103077]
+rsa_merge$ref_immediate_cod[rsa_merge$meta.instanceID == 103077]
 ## write.csv(rsa_merge, "../data/clean data/mrc_clean.csv", row.names = FALSE)
 ## rsa_results <- itemMissing(rsa_merge, odk_form = who2016)
 
@@ -522,11 +568,12 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         morocco_merge[[i]] <- morocco[, index]
         }
 }
+## add source and reference causes (if applicable)
 morocco_merge <- as.data.frame(morocco_merge)
 identical(names(morocco_merge), names(who2016_151_data))
 morocco_merge$source <- "Morocco"
 morocco_merge$ref_cod <- NA
-morocco_merge$ref_cod_u <- NA
+morocco_merge$ref_immediate_cod <- NA
 ## write.csv(morocco_merge, "../data/clean data/morocco_clean.csv", row.names = FALSE)
 ## morocco_results <- itemMissing(morocco_merge, odk_form = who2016)
 
@@ -550,8 +597,6 @@ names(thailand)[names(thailand) == "X.Enter.child.s.age.in.days.."] <- "age_chil
 names(thailand)[names(thailand) == "X.Enter.child.s.age.in.months.."] <- "age_child_months"
 names(thailand)[names(thailand) == "X.Enter.child.s.age.in.years.."] <- "age_child_years"
 names(thailand)[names(thailand) == "X.Enter.adult.s.age.in.years.."] <- "age_adult"
-
-## lapply(thailand, unique)
 
 tmp_new_names <- strsplit(names(thailand), "\\.")
 new_names <- lapply(tmp_new_names, function (x) ifelse(length(x)==1, x[1], x[2]))
@@ -582,6 +627,22 @@ for (i in names(new_thai)) {
     }
 }
 
+## lapply(new_thai, unique)
+table(new_thai == "doesn't know")
+new_thai[new_thai == "doesn't know"] <- "dk"
+table(new_thai == "doesn't know")
+table(new_thai == "dk")
+
+table(new_thai == "refused to answer")
+new_thai[new_thai == "refused to answer"] <- "ref"
+table(new_thai == "refused to answer")
+table(new_thai == "ref")
+
+table(new_thai$Id10310)
+new_thai$Id10310[new_thai$Id10310 == "yes (she was not pregnant; and she did not recently deliver, have abortion, or miscarry)"] <- "yes"
+new_thai$Id10310[new_thai$Id10310 == "no (she was pregnant or she recently delivered, had an abortion or miscarried)"] <- "no"
+table(new_thai$Id10310)
+
 thailand_merge <- NULL
 for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
     x <- strsplit(i, "\\.")[[1]]
@@ -593,19 +654,20 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         thailand_merge[[i]] <- new_thai[, index]
         }
 }
+## add source and reference causes (if applicable)
 thailand_merge <- as.data.frame(thailand_merge)
 identical(names(thailand_merge), names(who2016_151_data))
 thailand_merge$source <- "Thailand"
-thailand_merge$ref_cod <- NA
+thailand_merge$ref_immediate_cod <- NA
 
 names(thailand_cod)
-merge_cod <- thailand_cod[, c("Qcode", "underlying COD")]
-names(merge_cod) <- c("meta.instanceID", "ref_cod_u")
+merge_cod <- thailand_cod[, c("Qcode", "underlying COD_ICD-10")]
+names(merge_cod) <- c("meta.instanceID", "ref_cod")
 dim(merge_cod)
 dim(thailand_merge)
 table(thailand_merge$meta.instanceID %in% merge_cod$meta.instanceID)
 thailand_merge <- merge(thailand_merge, merge_cod, by = "meta.instanceID",
-                   all.x = TRUE, all.y = FALSE)
+                        all.x = TRUE, all.y = FALSE)
 ## write.csv(thailand_merge, "../data/clean data/thailand_clean.csv", row.names = FALSE)
 ## thailand_results <- itemMissing(thailand_merge, odk_form = who2016)
 
@@ -636,11 +698,12 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         zambia_merge[[i]] <- zambia[, index]
         }
 }
+## add source and reference causes (if applicable)
 zambia_merge <- as.data.frame(zambia_merge)
 identical(names(zambia_merge), names(who2016_151_data))
 zambia_merge$source <- "Zambia"
 zambia_merge$ref_cod <- NA
-zambia_merge$ref_cod_u <- NA
+zambia_merge$ref_immediate_cod <- NA
 ## write.csv(zambia_merge, "../data/clean data/zambia_clean.csv", row.names = FALSE)
 ## zambia_results <- itemMissing(zambia_merge, odk_form = who2016)
 
@@ -665,11 +728,12 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
         kenya_merge[[i]] <- kenya[, index]
         }
 }
+## add source and reference causes (if applicable)
 kenya_merge <- as.data.frame(kenya_merge)
 identical(names(kenya_merge), names(who2016_151_data))
 kenya_merge$source <- "Kenya"
 kenya_merge$ref_cod <- NA
-kenya_merge$ref_cod_u <- NA
+kenya_merge$ref_immediate_cod <- NA
 ## write.csv(kenya_merge, "../data/clean data/kenya_clean.csv", row.names = FALSE)
 ## kenya_results <- itemMissing(kenya_merge, odk_form = who2016)
 
@@ -731,16 +795,14 @@ IR <- IR %>%
 IR$rank_entropy <- 1
 IR$rank_entropy[IR$type != "integer"] = dplyr::percent_rank(IR$entropy[IR$type != "integer"])
 
-## write.csv(IR, "combined-results.csv", row.names = FALSE)
-## write.csv(IR, "item_response_results.csv", row.names = FALSE)
-
+write.csv(IR, "../results/item response/item_response_results.csv", row.names = FALSE)
 
 names(combined_results$DummyDF)
 table(combined_results$DummyDF$item_response_ID == combined$item.response.ID)
 combined_results$DummyDF$source <- combined$source
 DummyDF <- combined_results$DummyDF[, !(names(combined_results$DummyDF) %in% c("instanceid", "id"))]
 
-## write.csv(DummyDF,
-##           "../data/clean data/item-indicator-combined-data.csv", row.names = FALSE)
+write.csv(DummyDF,
+          "../data/clean data/item-indicator-combined-data.csv", row.names = FALSE)
 
 date()
