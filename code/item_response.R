@@ -582,9 +582,7 @@ morocco_merge$ref_immediate_cod <- NA
 # Source: Thailand
 #---------------------------------#
 dir("../data/raw data/thailand_data_VA")
-thailand_cod <- read_excel("../data/raw data/thailand_data_VA/DATA_underlying COD_TH_1500case.xlsx")
-thailand_cod <- as.data.frame(thailand_cod)
-thailand <- read.csv("../data/raw data/thailand_data_VA/DATA_VA_TH_2500case.csv", stringsAsFactors = FALSE)
+thailand <- read.csv("../data/raw data/thailand_data_VA/DATA_VA_TH_2500case_cod.csv", stringsAsFactors = FALSE)
 dim(thailand)
 names(thailand)
 table(thailand$"X.Id10013...Did.the.respondent.give.consent..")
@@ -659,15 +657,8 @@ thailand_merge <- as.data.frame(thailand_merge)
 identical(names(thailand_merge), names(who2016_151_data))
 thailand_merge$source <- "Thailand"
 thailand_merge$ref_immediate_cod <- NA
+thailand_merge$ref_cod <- thailand$COD_ICD
 
-names(thailand_cod)
-merge_cod <- thailand_cod[, c("Qcode", "underlying COD_ICD-10")]
-names(merge_cod) <- c("meta.instanceID", "ref_cod")
-dim(merge_cod)
-dim(thailand_merge)
-table(thailand_merge$meta.instanceID %in% merge_cod$meta.instanceID)
-thailand_merge <- merge(thailand_merge, merge_cod, by = "meta.instanceID",
-                        all.x = TRUE, all.y = FALSE)
 ## write.csv(thailand_merge, "../data/clean data/thailand_clean.csv", row.names = FALSE)
 ## thailand_results <- itemMissing(thailand_merge, odk_form = who2016)
 
