@@ -315,7 +315,7 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
 ## add source and reference causes (if applicable)
 kintampo_merge <- as.data.frame(kintampo_merge)
 identical(names(kintampo_merge), names(who2016_151_data))
-kintampo_merge$source <- "KINTAMPO"
+kintampo_merge$source <- "Kintampo"
 kintampo_merge$ref_cod <- NA
 kintampo_merge$ref_immediate_cod <- NA
 ## write.csv(kintampo_merge, "../data/clean data/kintampo_clean.csv", row.names = FALSE)
@@ -332,6 +332,9 @@ names(gha_maternal)
 table(gha_maternal$Id10013)
 
 ## lapply(gha_maternal, unique)
+table(gha_maternal$age_group)
+gha_maternal$age_group[gha_maternal$age_group == 3] <- "adult"
+
 table(gha_maternal$Id10090)
 gha_maternal$Id10090[gha_maternal$Id10090 == "yes, abuse"] <- "yes"
 gha_maternal$Id10090[gha_maternal$Id10090 == "yes, homicide"] <- "yes"
@@ -356,7 +359,8 @@ for (i in names(who2016_151_data)) { # i = names(who2016_151_data)[1]
 gha_maternal_merge <- as.data.frame(gha_maternal_merge)
 identical(names(gha_maternal_merge), names(who2016_151_data))
 gha_maternal_merge$source <- "Ghana (maternal)"
-gha_maternal_merge$ref_cod <- NA
+table(gha_maternal_merge$meta.instanceID == gha_maternal$meta.instanceID)
+gha_maternal_merge$ref_cod <- gha_maternal$cdicd10i
 gha_maternal_merge$ref_immediate_cod <- NA
 ## write.csv(gha_maternal_merge, "../data/clean data/ghana_maternal_clean.csv", row.names = FALSE)
 ## gha_maternal_results <- itemMissing(gha_maternal_merge, odk_form = who2016)
